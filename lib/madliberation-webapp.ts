@@ -25,6 +25,7 @@ export interface MadLiberationWebappProps extends cdk.StackProps {
   amazonClientSecret?: string;
   googleClientId?: string;
   googleClientSecret?: string;
+  dnsWeight?: number;
 }
 
 export class MadliberationWebapp extends cdk.Stack {
