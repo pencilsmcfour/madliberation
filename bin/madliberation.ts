@@ -147,12 +147,12 @@ const stackname = require("@cdk-turnkey/stackname");
           " is not a number. dnsWeight"
       );
       console.log(dnsWeight);
-      process.exit(1);
+      process.exit(2);
     }
     if (dnsWeight < 0 || dnsWeight > 255) {
       console.log("bin: error: dnsWeight must be >= 0, <= 255. dnsWeight:");
       console.log(dnsWeight);
-      process.exit(1);
+      process.exit(3);
     }
   }
   // No validation on the domainName param, because of edge cases.

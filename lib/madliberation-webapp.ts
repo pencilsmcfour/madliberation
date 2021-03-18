@@ -389,6 +389,7 @@ export class MadliberationWebapp extends cdk.Stack {
         ),
       });
       if (dnsWeight || dnsWeight === 0) {
+        console.log(`lib: received dnsWeight of ${dnsWeight}`);
         const cfnAliasRecordSet = aliasRecord.node
           .defaultChild as route53.CfnRecordSet;
         cfnAliasRecordSet.weight = dnsWeight;
