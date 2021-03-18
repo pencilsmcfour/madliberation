@@ -390,12 +390,14 @@ export class MadliberationWebapp extends cdk.Stack {
       });
       if (dnsWeight || dnsWeight === 0) {
         console.log(`lib: received dnsWeight of ${dnsWeight}`);
+        console.log("typeof dnsWeight:");
+        console.log(typeof dnsWeight);
         const cfnAliasRecordSet = aliasRecord.node
           .defaultChild as route53.CfnRecordSet;
-        cfnAliasRecordSet.weight = dnsWeight;
+        cfnAliasRecordSet.weight = dnsWeight as number;
         const cfnAliasWWWRecordSet = aliasWWWRecord.node
           .defaultChild as route53.CfnRecordSet;
-        cfnAliasWWWRecordSet.weight = dnsWeight;
+        cfnAliasWWWRecordSet.weight = dnsWeight as number;
       }
     }
 
