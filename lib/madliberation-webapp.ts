@@ -13,6 +13,7 @@ import { Effect, PolicyStatement } from "@aws-cdk/aws-iam";
 import * as acm from "@aws-cdk/aws-certificatemanager";
 import * as route53 from "@aws-cdk/aws-route53";
 import * as targets from "@aws-cdk/aws-route53-targets";
+const { v4: uuidv4 } = require("uuid");
 const schema = require("../backend/schema");
 
 export interface MadLiberationWebappProps extends cdk.StackProps {
@@ -394,9 +395,11 @@ export class MadliberationWebapp extends cdk.Stack {
         const cfnAliasRecordSet = aliasRecord.node
           .defaultChild as route53.CfnRecordSet;
         cfnAliasRecordSet.weight = props.dnsWeight;
+        cfnAliasRecordSet.setIdentifier = "mlwebapp-" + uuidv4();
         const cfnAliasWWWRecordSet = aliasWWWRecord.node
           .defaultChild as route53.CfnRecordSet;
         cfnAliasWWWRecordSet.weight = props.dnsWeight;
+        cfnAliasWWWRecordSet.setIdentifier = "mlwebapp-" + uuidv4();
       }
     }
 
