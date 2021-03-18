@@ -154,6 +154,7 @@ const stackname = require("@cdk-turnkey/stackname");
       console.log(dnsWeight);
       process.exit(3);
     }
+    webappProps.dnsWeight = dnsWeight;
   }
   // No validation on the domainName param, because of edge cases.
   // For example, what if the account that owns the name has set the name
