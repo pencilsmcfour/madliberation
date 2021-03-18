@@ -5,7 +5,7 @@ set -e
 STACKNAME=$(npx @cdk-turnkey/stackname@1.2.0 --suffix webapp)
 APP_URL=https://$(aws cloudformation describe-stacks \
   --stack-name ${STACKNAME} | \
-  jq '.Stacks[0].Outputs | map(select(.OutputKey == "webappDomainName"))[0].OutputValue' | \
+  jq '.Stacks[0].Outputs | map(select(.OutputKey == "itestDomain"))[0].OutputValue' | \
   tr -d \")
 
 # Backend smoke test
@@ -19,12 +19,13 @@ then
   echo "failing"
   exit 1
 fi
+echo "backend smoke test successful"
 # www smoke test
 WWW_APP_URL=https://$(aws cloudformation describe-stacks \
   --stack-name ${STACKNAME} | \
-  jq '.Stacks[0].Outputs | map(select(.OutputKey == "wwwDomainName"))[0].OutputValue' | \
+  jq '.Stacks[0].Outputs | map(select(.OutputKey == "itestWwwDomain"))[0].OutputValue' | \
   tr -d \")
-if [[ "${WWW_APP_URL}" != "https://no www domain name" ]]
+if [[ "${WWW_APP_URL}" != "https://no itest www domain name" ]]
 then
   WWW_BACKEND_CANARY_URL=${WWW_APP_URL}/prod/public-endpoint
   WWW_OUTPUT=$(curl ${WWW_BACKEND_CANARY_URL} | jq '.Output')
@@ -36,6 +37,7 @@ then
     echo "failing"
     exit 1
   fi
+  echo "backend www smoke test successful"
 fi
 
 # End-to-end test

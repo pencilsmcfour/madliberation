@@ -47,6 +47,7 @@ export class MadliberationWebapp extends cdk.Stack {
       amazonClientSecret,
       googleClientId,
       googleClientSecret,
+      dnsWeight,
     } = props;
 
     const sedersTable = new dynamodb.Table(this, "SedersTable", {
@@ -120,8 +121,10 @@ export class MadliberationWebapp extends cdk.Stack {
       }
     );
 
-    let hostedZone, wwwDomainName, certificate, domainNames;
+    let hostedZone, wwwDomainName, certificate, domainNames, sidedoorDomain;
+
     if (domainName && zoneId) {
+      sidedoorDomain = "sidedoor." + domainName;
       hostedZone = route53.HostedZone.fromHostedZoneAttributes(
         this,
         "HostedZone",
@@ -130,10 +133,13 @@ export class MadliberationWebapp extends cdk.Stack {
       wwwDomainName = "www." + domainName;
       certificate = new acm.Certificate(this, "Certificate", {
         domainName,
-        subjectAlternativeNames: [wwwDomainName],
+        // sidedoorDomain will always have a simple traffic policy, so we can
+        // get to the deployed site even if, because of weighted traffic
+        // policies, it isn't always receiving traffic at domainName
+        subjectAlternativeNames: [wwwDomainName, sidedoorDomain],
         validation: acm.CertificateValidation.fromDns(hostedZone),
       });
-      domainNames = [domainName, wwwDomainName];
+      domainNames = [domainName, wwwDomainName, sidedoorDomain];
     }
 
     const distroProps: any = {
@@ -388,18 +394,29 @@ export class MadliberationWebapp extends cdk.Stack {
           new targets.CloudFrontTarget(distro)
         ),
       });
-      if (props.dnsWeight || props.dnsWeight === 0) {
-        console.log(`lib: received dnsWeight of ${props.dnsWeight}`);
-        console.log("typeof dnsWeight:");
-        console.log(typeof props.dnsWeight);
+      if (dnsWeight || dnsWeight === 0) {
         const cfnAliasRecordSet = aliasRecord.node
           .defaultChild as route53.CfnRecordSet;
-        cfnAliasRecordSet.weight = props.dnsWeight;
+        cfnAliasRecordSet.weight = dnsWeight;
         cfnAliasRecordSet.setIdentifier = "mlwebapp-" + uuidv4();
         const cfnAliasWWWRecordSet = aliasWWWRecord.node
           .defaultChild as route53.CfnRecordSet;
-        cfnAliasWWWRecordSet.weight = props.dnsWeight;
+        cfnAliasWWWRecordSet.weight = dnsWeight;
         cfnAliasWWWRecordSet.setIdentifier = "mlwebapp-" + uuidv4();
+
+        // Set up sidedoor domain.
+        // If there is a weighted traffic policy, that means we probably have
+        // other weighted traffic policies to other targets.
+        // That means we can't reliably get to props.domainName for itegration
+        // testing. So we'll set up a side door domain for integration
+        // testing.
+        const sideDoorRecord = new route53.ARecord(this, "AliasSidedoor", {
+          recordName: sidedoorDomain,
+          zone: hostedZone,
+          target: route53.RecordTarget.fromAlias(
+            new targets.CloudFrontTarget(distro)
+          ),
+        });
       }
     }
 
@@ -408,12 +425,28 @@ export class MadliberationWebapp extends cdk.Stack {
     });
     scriptsBucket.grantRead(fn);
 
+    const noItestWwwDomainName = "no itest www domain name";
+    if (sidedoorDomain) {
+      new cdk.CfnOutput(this, "itestDomain", {
+        value: sidedoorDomain,
+      });
+      new cdk.CfnOutput(this, "itestWwwDomain", {
+        value: noItestWwwDomainName,
+      });
+    } else {
+      new cdk.CfnOutput(this, "itestDomain", {
+        value: webappDomainName,
+      });
+      new cdk.CfnOutput(this, "itestWwwDomain", {
+        value: wwwDomainName || noItestWwwDomainName,
+      });
+    }
     const fromAddressOutput = fromAddress || "no SES from address";
     new cdk.CfnOutput(this, "sesFromAddress", {
       value: fromAddressOutput,
     });
     new cdk.CfnOutput(this, "webappDomainName", {
-      value: webappDomainName || "no domain name specified",
+      value: webappDomainName,
     });
     new cdk.CfnOutput(this, "wwwDomainName", {
       value: wwwDomainName || "no www domain name",
