@@ -86,10 +86,18 @@ const stackname = require("@cdk-turnkey/stackname");
 
   console.log("==================");
 
+  configParams.forEach((c) => {
+    c.ssmParamValue = ssmParameterData[c.ssmParamName()];
+  });
+  const webappProps: any = {};
+  configParams.forEach((c) => {
+    webappProps[c.webappParamName] = c.ssmParamValue;
+  });
+
   // Validation
-  if (ssmParameterData.fromAddress) {
+  if (webappProps.fromAddress) {
     // Validate the fromAddress, if provided
-    const { fromAddress } = ssmParameterData;
+    const { fromAddress } = webappProps;
     const sesv2 = new AWS.SESV2({ apiVersion: "2019-09-27" });
     // Check to make sure the email is verified and has sending enabled
     let sesv2Response: any;
@@ -131,9 +139,9 @@ const stackname = require("@cdk-turnkey/stackname");
       process.exit(1);
     }
   }
-  if (ssmParameterData.dnsWeight) {
-    const dnsWeight = parseInt(ssmParameterData.dnsWeight, 10);
-    if (!dnsWeight) {
+  if (webappProps.dnsWeight) {
+    const dnsWeight = parseInt(webappProps.dnsWeight, 10);
+    if (!dnsWeight && dnsWeight !== 0) {
       console.log(
         "bin: error: SSM param dnsWeight was provided, but" +
           " is not a number. dnsWeight"
@@ -154,13 +162,6 @@ const stackname = require("@cdk-turnkey/stackname");
   // We'll just go with whatever is provided for domainName, and let the stack
   // or build fail if anything goes wrong.
 
-  configParams.forEach((c) => {
-    c.ssmParamValue = ssmParameterData[c.ssmParamName()];
-  });
-  const webappProps: any = {};
-  configParams.forEach((c) => {
-    webappProps[c.webappParamName] = c.ssmParamValue;
-  });
   console.log("bin: Instantiating stack with fromAddress:");
   console.log(webappProps.fromAddress);
   console.log("and domainName:");

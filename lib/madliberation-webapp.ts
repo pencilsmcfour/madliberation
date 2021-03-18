@@ -46,10 +46,8 @@ export class MadliberationWebapp extends cdk.Stack {
       amazonClientSecret,
       googleClientId,
       googleClientSecret,
+      dnsWeight,
     } = props;
-
-    console.log("schema.PARTITION_KEY:");
-    console.log(schema.PARTITION_KEY);
 
     const sedersTable = new dynamodb.Table(this, "SedersTable", {
       partitionKey: {
@@ -373,21 +371,31 @@ export class MadliberationWebapp extends cdk.Stack {
     );
 
     if (domainName && wwwDomainName && hostedZone) {
+      // cfnUserPool = userPool.node.defaultChild as cognito.CfnUserPool;
+
       // point the domain name with an alias record to the distro
-      new route53.ARecord(this, "Alias", {
+      const aliasRecord = new route53.ARecord(this, "Alias", {
         recordName: domainName,
         zone: hostedZone,
         target: route53.RecordTarget.fromAlias(
           new targets.CloudFrontTarget(distro)
         ),
       });
-      new route53.ARecord(this, "AliasWWW", {
+      const aliasWWWRecord = new route53.ARecord(this, "AliasWWW", {
         recordName: wwwDomainName,
         zone: hostedZone,
         target: route53.RecordTarget.fromAlias(
           new targets.CloudFrontTarget(distro)
         ),
       });
+      if (dnsWeight || dnsWeight === 0) {
+        const cfnAliasRecordSet = aliasRecord.node
+          .defaultChild as route53.CfnRecordSet;
+        cfnAliasRecordSet.weight = dnsWeight;
+        const cfnAliasWWWRecordSet = aliasWWWRecord.node
+          .defaultChild as route53.CfnRecordSet;
+        cfnAliasWWWRecordSet.weight = dnsWeight;
+      }
     }
 
     const scriptsBucket = new s3.Bucket(this, "ScriptsBucket", {
