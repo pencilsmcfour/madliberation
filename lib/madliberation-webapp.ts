@@ -46,7 +46,6 @@ export class MadliberationWebapp extends cdk.Stack {
       amazonClientSecret,
       googleClientId,
       googleClientSecret,
-      dnsWeight,
     } = props;
 
     const sedersTable = new dynamodb.Table(this, "SedersTable", {
@@ -388,16 +387,16 @@ export class MadliberationWebapp extends cdk.Stack {
           new targets.CloudFrontTarget(distro)
         ),
       });
-      if (dnsWeight || dnsWeight === 0) {
-        console.log(`lib: received dnsWeight of ${dnsWeight}`);
+      if (props.dnsWeight || props.dnsWeight === 0) {
+        console.log(`lib: received dnsWeight of ${props.dnsWeight}`);
         console.log("typeof dnsWeight:");
-        console.log(typeof dnsWeight);
+        console.log(typeof props.dnsWeight);
         const cfnAliasRecordSet = aliasRecord.node
           .defaultChild as route53.CfnRecordSet;
-        cfnAliasRecordSet.weight = dnsWeight as number;
+        cfnAliasRecordSet.weight = props.dnsWeight;
         const cfnAliasWWWRecordSet = aliasWWWRecord.node
           .defaultChild as route53.CfnRecordSet;
-        cfnAliasWWWRecordSet.weight = dnsWeight as number;
+        cfnAliasWWWRecordSet.weight = props.dnsWeight;
       }
     }
 
